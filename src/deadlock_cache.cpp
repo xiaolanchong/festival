@@ -50,7 +50,7 @@ void allocate_deadlock_cache()
 
 	if (verbose >= 4)
 		printf("Allocating %12llu bytes for %d deadlock cache\n",
-			size, 1 << log_deadlock_cache);
+			static_cast<unsigned long long>(size), 1 << log_deadlock_cache);
 
 	if (deadlock_cache == 0)
 		exit_with_error("can't allocate deadlock cache");

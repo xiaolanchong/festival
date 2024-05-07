@@ -18,7 +18,7 @@
 void save_status(board b_in, int pull_mode)
 {
 	FILE *fp;
-	char s[1000];
+	char s[1100];
 	board b;
 	char message[1000];
 	int y,x;
@@ -62,7 +62,7 @@ void print_node_advisors(tree* t, expansion_data* e)
 	mh = t->move_hashes + e->move_hash_place;
 	for (i = 0; i < e->moves_num; i++)
 	{
-		moves[i] = mh[i].move;
+		moves[i] = mh[i]._move;
 		get_score_of_hash(t, mh[i].hash, scores + i);
 	}
 
@@ -152,7 +152,7 @@ void print_node(tree* t, expansion_data* e, int print_moves, const char* message
 		for (i = 0; i < moves_num; i++)
 		{
 			printf("%3d: ", i);
-			print_move(&(mh[i].move));
+			print_move(&(mh[i]._move));
 
 			node_place = find_node_by_hash(t, mh[i].hash);
 			if (node_place == -1) exit_with_error("missing node");

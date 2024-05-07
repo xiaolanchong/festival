@@ -1,13 +1,19 @@
 // Festival Sokoban Solver
 // Copyright 2018-2020 Yaron Shoham
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
+#include <fstream>
+#include <string>
+#include <sstream>
+#ifndef LINUX
 #include <windows.h>
+#endif
 
 #include "util.h"
 #include "board.h"
@@ -221,10 +227,83 @@ int time_limit_exceeded(int time_limit, int local_start_time)
 	return 0;
 }
 
+#if defined(WIN32) || defined(WINDOWS)
+
+unsigned int get_core_number()
+{
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo.dwNumberOfProcessors;
+}
+
+unsigned long long get_memory()
+{
+	MEMORYSTATUSEX status;
+	status.dwLength = sizeof(status);
+	GlobalMemoryStatusEx(&status);
+	return status.ullTotalPhys;
+}
+
+#else
+
+unsigned int get_core_number()
+{
+	// looking for "cpu cores  : N"
+	std::ifstream f("/proc/cpuinfo");
+	assert(f.is_open());
+	std::string line;
+	unsigned int total_cores = 0;
+	while (std::getline(f, line))
+	{
+		const char search_for[] = "cpu cores";
+		auto pos = line.find(search_for);
+		if (pos != std::string::npos)
+		{
+			std::istringstream is(line.substr(pos + sizeof(search_for) - 1));
+			std::string colon;
+			is >> colon;
+			assert(colon == ":");
+			unsigned int proc_cores = 0;
+			is >> proc_cores;
+			total_cores += proc_cores;
+		}
+	}
+	return total_cores != 0 ? total_cores : 1;
+}
+
+unsigned long long get_memory()
+{
+	//looking for "MemTotal:   N kB"
+	std::ifstream f("/proc/meminfo");
+	assert(f.is_open());
+	std::string line;
+	while (std::getline(f, line))
+	{
+		const char search_for[] = "MemTotal";
+		auto pos = line.find(search_for);
+		if (pos != std::string::npos)
+		{
+			std::istringstream is(line.substr(pos + sizeof(search_for) - 1));
+			std::string colon;
+			is >> colon;
+			assert(colon == ":");
+			unsigned long long memKb = 0;
+			is >> memKb;
+			std::string units;
+			is >> units;
+			assert(units == "kB");
+			return memKb * 1024;
+		}
+	}
+	return 0;
+}
+
+#endif
+
 
 int get_number_of_cores()
 {
-	int processor_count;
+	unsigned int processor_count;
 	unsigned long long memory;
 
 	cores_num = 1;
@@ -233,15 +312,10 @@ int get_number_of_cores()
 	return 1;
 #endif
 
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo(&sysinfo);
-	processor_count = sysinfo.dwNumberOfProcessors;
-	printf("detected %d cores\n", processor_count);
+	processor_count = get_core_number();
+	printf("detected %u cores\n", processor_count);
 
-	MEMORYSTATUSEX status;
-	status.dwLength = sizeof(status);
-	GlobalMemoryStatusEx(&status);
-	memory = status.ullTotalPhys;
+	memory = get_memory();
 	memory = (int)((memory / 1073741824.0) + 0.5);
 	printf("detected %lld GB memory\n", memory);
 

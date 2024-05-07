@@ -33,7 +33,7 @@ int cores_num = -1;
 
 int any_core_solved;
 
-#ifdef VISUAL_STUDIO
+#ifdef VISUAL_STUDIO_RUN
 char global_dir[1000] = "c:\\sokoban";
 #else
 char global_dir[1000] = ".";
